@@ -1,3 +1,8 @@
 spring:
   application:
     name: elecciones
+  profiles:
+    active: dev
+
+server:
+  port: 8080

@@ -1,0 +1,5 @@
+CREATE TABLE app_health_check (
+    id BIGSERIAL PRIMARY KEY,
+    description VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
