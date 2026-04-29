@@ -1,9 +1,12 @@
 package com.elecciones.election.controller;
 
+import com.elecciones.election.dto.CreateElectionListRequest;
 import com.elecciones.election.dto.CreateElectionRequest;
 import com.elecciones.election.dto.CreatePositionRequest;
+import com.elecciones.election.dto.ElectionListResponse;
 import com.elecciones.election.dto.ElectionResponse;
 import com.elecciones.election.dto.PositionResponse;
+import com.elecciones.election.service.ElectionListService;
 import com.elecciones.election.service.ElectionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +23,7 @@ import java.util.UUID;
 public class ElectionController {
 
     private final ElectionService electionService;
+    private final ElectionListService electionListService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -46,5 +50,15 @@ public class ElectionController {
             @Valid @RequestBody CreatePositionRequest request
     ) {
         return electionService.addPosition(id, request);
+    }
+
+    @PostMapping("/{id}/lists")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ElectionListResponse createList(
+            @PathVariable UUID id,
+            @Valid @RequestBody CreateElectionListRequest request
+    ) {
+        return electionListService.createList(id, request);
     }
 }

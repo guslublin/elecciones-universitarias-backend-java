@@ -196,3 +196,57 @@ Ejemplo:
   "name": "Rector"
 }
 
+## Registro de listas electorales y candidatos
+
+El sistema permite registrar listas electorales completas dentro de una elección universitaria.
+
+Endpoint implementado:
+
+- `POST /api/v1/elections/{id}/lists`: registra una lista con sus candidatos. Requiere rol `ADMIN`.
+
+Regla principal:
+
+Una lista debe incluir exactamente un candidato por cada cargo definido en la elección.
+
+Ejemplo: si una elección tiene los cargos `Rector`, `Decano de Ingeniería` y `Decano de Ciencias`, cada lista debe registrar exactamente tres candidatos, uno asociado a cada cargo.
+
+Validaciones implementadas:
+
+- La elección debe existir.
+- La elección debe estar en estado `DRAFT`.
+- No se pueden registrar listas en elecciones `ACTIVE` o `CLOSED`.
+- No se permiten listas duplicadas dentro de una misma elección.
+- No pueden faltar cargos.
+- No puede haber dos candidatos para el mismo cargo dentro de una lista.
+- No se permiten candidatos repetidos dentro de una misma lista.
+- Las entidades JPA no se exponen directamente; se usan DTOs para entrada y salida.
+
+Ejemplo:
+
+```json
+
+{
+  "name": "Lista A",
+  "description": "Unidad Universitaria",
+  "candidates": [
+    {
+      "positionId": "3791e5d0-ff9f-4f1e-9185-2607cb936a0a",
+      "fullName": "Juan García",
+      "career": "Derecho",
+      "proposal": "Modernización institucional"
+    },
+    {
+      "positionId": "421124b9-19dc-4bc9-bb00-4a23e6e1e630",
+      "fullName": "Pedro López",
+      "career": "Ingeniería",
+      "proposal": "Fortalecimiento de laboratorios"
+    },
+    {
+      "positionId": "6fb5859a-b7e6-48e1-97a7-2c5b8d59a3f3",
+      "fullName": "Carlos Ruiz",
+      "career": "Ciencias",
+      "proposal": "Impulso a la investigación"
+    }
+  ]
+}
+
