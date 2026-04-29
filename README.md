@@ -250,3 +250,36 @@ Ejemplo:
   ]
 }
 
+
+--- 
+
+## Votación segura
+
+El sistema permite que usuarios con rol `VOTER` emitan un voto seleccionando una lista completa dentro de una elección activa.
+
+Endpoints implementados:
+
+- `POST /api/v1/elections/{id}/vote`: permite emitir un voto. Requiere rol `VOTER`.
+- `GET /api/v1/elections/{id}/my-status`: permite consultar si el usuario autenticado ya votó en esa elección. Requiere rol `VOTER`.
+
+Reglas implementadas:
+
+- Solo usuarios con rol `VOTER` pueden votar.
+- El voto se realiza por lista completa, no por candidato individual.
+- La elección debe estar en estado `ACTIVE`.
+- La lista seleccionada debe pertenecer a la elección indicada.
+- Cada votante puede emitir exactamente un voto por elección.
+- El sistema guarda un `voter_hash` anonimizado, nunca el email ni el ID real del usuario.
+- El voto queda registrado con timestamp.
+- Cada voto genera un evento de auditoría `VOTE_CAST`.
+
+Protección concurrente:
+
+- La tabla `votes` posee una restricción única sobre `(voter_hash, election_id)`.
+- El flujo de voto se ejecuta dentro de una transacción.
+- La elección se consulta con locking pesimista durante el registro del voto.
+- Si dos solicitudes concurrentes intentan votar con el mismo usuario, solo una puede persistir; las demás retornan `409 Conflict`.
+
+Ejemplo:
+
+```json
