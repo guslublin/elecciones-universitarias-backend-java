@@ -61,4 +61,16 @@ public class ElectionController {
     ) {
         return electionListService.createList(id, request);
     }
+
+    @PutMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ElectionResponse activate(@PathVariable UUID id) {
+        return electionService.activate(id);
+    }
+
+    @PutMapping("/{id}/close")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ElectionResponse close(@PathVariable UUID id) {
+        return electionService.close(id);
+    }
 }

@@ -11,4 +11,6 @@ public interface PositionRepository extends JpaRepository<Position, UUID> {
     boolean existsByElectionIdAndNameIgnoreCase(UUID electionId, String name);
 
     List<Position> findByElectionId(UUID electionId);
+
+    long countByElectionId(UUID electionId);
 }

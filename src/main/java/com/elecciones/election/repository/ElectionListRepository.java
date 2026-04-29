@@ -8,4 +8,6 @@ import java.util.UUID;
 public interface ElectionListRepository extends JpaRepository<ElectionList, UUID> {
 
     boolean existsByElectionIdAndNameIgnoreCase(UUID electionId, String name);
+
+    long countByElectionId(UUID electionId);
 }

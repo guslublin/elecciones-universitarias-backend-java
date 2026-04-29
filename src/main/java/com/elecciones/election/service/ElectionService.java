@@ -8,6 +8,7 @@ import com.elecciones.election.dto.ElectionResponse;
 import com.elecciones.election.dto.PositionResponse;
 import com.elecciones.election.entity.Election;
 import com.elecciones.election.entity.Position;
+import com.elecciones.election.repository.ElectionListRepository;
 import com.elecciones.election.repository.ElectionRepository;
 import com.elecciones.election.repository.PositionRepository;
 import com.elecciones.election.validator.ElectionValidator;
@@ -16,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,6 +27,7 @@ public class ElectionService {
 
     private final ElectionRepository electionRepository;
     private final PositionRepository positionRepository;
+    private final ElectionListRepository electionListRepository;
     private final ElectionValidator electionValidator;
 
     @Transactional
@@ -98,6 +101,75 @@ public class ElectionService {
                 saved.getId(),
                 saved.getName()
         );
+    }
+
+    @Transactional
+    public ElectionResponse activate(UUID electionId) {
+        Election election = electionRepository.findById(electionId)
+                .orElseThrow(() -> new BusinessException(
+                        "Elección no encontrada",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        if (election.getStatus() == ElectionStatus.ACTIVE) {
+            throw new BusinessException(
+                    "La elección ya está activa",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        if (election.getStatus() == ElectionStatus.CLOSED) {
+            throw new BusinessException(
+                    "No se puede activar una elección cerrada",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        long positionsCount = positionRepository.countByElectionId(electionId);
+        long listsCount = electionListRepository.countByElectionId(electionId);
+
+        if (positionsCount < 1) {
+            throw new BusinessException(
+                    "La elección debe tener al menos un cargo para ser activada",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        if (listsCount < 1) {
+            throw new BusinessException(
+                    "La elección debe tener al menos una lista válida para ser activada",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        election.setStatus(ElectionStatus.ACTIVE);
+
+        Election saved = electionRepository.save(election);
+
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public ElectionResponse close(UUID electionId) {
+        Election election = electionRepository.findById(electionId)
+                .orElseThrow(() -> new BusinessException(
+                        "Elección no encontrada",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        if (election.getStatus() == ElectionStatus.CLOSED) {
+            throw new BusinessException(
+                    "La elección ya está cerrada",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        election.setStatus(ElectionStatus.CLOSED);
+        election.setClosedAt(LocalDateTime.now());
+
+        Election saved = electionRepository.save(election);
+
+        return toResponse(saved);
     }
 
     private ElectionResponse toResponse(Election election) {
