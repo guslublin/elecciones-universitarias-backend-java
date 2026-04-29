@@ -2,6 +2,8 @@ package com.elecciones.auth.controller;
 
 import com.elecciones.auth.dto.*;
 import com.elecciones.auth.service.AuthService;
+import com.elecciones.security.ratelimit.LoginRateLimitService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final LoginRateLimitService loginRateLimitService;
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
@@ -21,7 +24,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+    public AuthResponse login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        String ipAddress = getClientIp(httpRequest);
+        loginRateLimitService.validateLoginAttempt(ipAddress);
         return authService.login(request);
     }
 
@@ -34,5 +42,15 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request);
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        return request.getRemoteAddr();
     }
 }
