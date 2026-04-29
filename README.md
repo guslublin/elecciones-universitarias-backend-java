@@ -283,3 +283,35 @@ Protección concurrente:
 Ejemplo:
 
 ```json
+{
+  "listId": "uuid-de-la-lista"
+}
+
+---
+
+## Resultados y estadísticas
+
+El sistema permite consultar resultados electorales y estadísticas de participación para usuarios con rol `ADMIN` o `AUDITOR`.
+
+Endpoints implementados:
+
+- `GET /api/v1/elections/{id}/results`: devuelve votos por lista, porcentaje del total y lista ganadora.
+- `GET /api/v1/elections/{id}/stats`: devuelve total de votantes habilitados, votos emitidos y porcentaje de participación.
+- `GET /api/v1/elections/{id}/report`: devuelve el reporte final de resultados y participación. Solo está disponible para elecciones cerradas.
+
+Reglas implementadas:
+
+- Solo `ADMIN` y `AUDITOR` pueden consultar resultados.
+- Usuarios `VOTER` no pueden consultar resultados mientras la elección está activa.
+- Los resultados se calculan en tiempo real a partir de la tabla `votes`.
+- El porcentaje se calcula sobre el total de votos emitidos.
+- La lista ganadora se determina por mayor cantidad de votos.
+- El resultado detalla qué candidato de la lista ganadora ocupa cada cargo.
+- La participación se calcula tomando como votantes habilitados a los usuarios con rol `VOTER`.
+
+Nota técnica:
+
+Para evitar el problema N+1, las listas se cargan con sus candidatos y cargos mediante `@EntityGraph`.
+
+---
+
