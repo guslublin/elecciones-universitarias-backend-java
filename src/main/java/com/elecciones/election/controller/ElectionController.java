@@ -1,7 +1,9 @@
 package com.elecciones.election.controller;
 
 import com.elecciones.election.dto.CreateElectionRequest;
+import com.elecciones.election.dto.CreatePositionRequest;
 import com.elecciones.election.dto.ElectionResponse;
+import com.elecciones.election.dto.PositionResponse;
 import com.elecciones.election.service.ElectionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,5 +36,15 @@ public class ElectionController {
     @GetMapping("/{id}")
     public ElectionResponse findById(@PathVariable UUID id) {
         return electionService.findById(id);
+    }
+
+    @PostMapping("/{id}/positions")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
+    public PositionResponse addPosition(
+            @PathVariable UUID id,
+            @Valid @RequestBody CreatePositionRequest request
+    ) {
+        return electionService.addPosition(id, request);
     }
 }

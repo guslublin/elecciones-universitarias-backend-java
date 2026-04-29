@@ -171,3 +171,28 @@ Ejemplo de creación:
 }
 
 ---
+
+## Cargos de elección
+
+El sistema permite definir los cargos que serán cubiertos dentro de una elección universitaria.
+
+Endpoint implementado:
+
+- `POST /api/v1/elections/{id}/positions`: agrega un cargo a una elección existente. Requiere rol `ADMIN`.
+
+Reglas implementadas:
+
+- Solo usuarios con rol `ADMIN` pueden agregar cargos.
+- La elección debe existir.
+- Solo se pueden agregar cargos mientras la elección esté en estado `DRAFT`.
+- No se pueden agregar cargos si la elección está `ACTIVE` o `CLOSED`.
+- No se permiten cargos duplicados dentro de una misma elección.
+- Los datos se reciben y retornan mediante DTOs, sin exponer entidades JPA.
+
+Ejemplo:
+
+```json
+{
+  "name": "Rector"
+}
+

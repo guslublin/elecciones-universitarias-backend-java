@@ -3,9 +3,13 @@ package com.elecciones.election.service;
 import com.elecciones.common.enums.ElectionStatus;
 import com.elecciones.common.exception.BusinessException;
 import com.elecciones.election.dto.CreateElectionRequest;
+import com.elecciones.election.dto.CreatePositionRequest;
 import com.elecciones.election.dto.ElectionResponse;
+import com.elecciones.election.dto.PositionResponse;
 import com.elecciones.election.entity.Election;
+import com.elecciones.election.entity.Position;
 import com.elecciones.election.repository.ElectionRepository;
+import com.elecciones.election.repository.PositionRepository;
 import com.elecciones.election.validator.ElectionValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +24,7 @@ import java.util.UUID;
 public class ElectionService {
 
     private final ElectionRepository electionRepository;
+    private final PositionRepository positionRepository;
     private final ElectionValidator electionValidator;
 
     @Transactional
@@ -56,6 +61,43 @@ public class ElectionService {
                 ));
 
         return toResponse(election);
+    }
+
+    @Transactional
+    public PositionResponse addPosition(UUID electionId, CreatePositionRequest request) {
+        Election election = electionRepository.findById(electionId)
+                .orElseThrow(() -> new BusinessException(
+                        "Elección no encontrada",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        if (election.getStatus() == ElectionStatus.ACTIVE || election.getStatus() == ElectionStatus.CLOSED) {
+            throw new BusinessException(
+                    "No se pueden agregar cargos a una elección activa o cerrada",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        String normalizedName = request.name().trim();
+
+        if (positionRepository.existsByElectionIdAndNameIgnoreCase(electionId, normalizedName)) {
+            throw new BusinessException(
+                    "Ya existe un cargo con ese nombre en la elección",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        Position position = Position.builder()
+                .election(election)
+                .name(normalizedName)
+                .build();
+
+        Position saved = positionRepository.save(position);
+
+        return new PositionResponse(
+                saved.getId(),
+                saved.getName()
+        );
     }
 
     private ElectionResponse toResponse(Election election) {
