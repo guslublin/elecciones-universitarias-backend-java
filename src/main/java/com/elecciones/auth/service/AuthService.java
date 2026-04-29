@@ -5,6 +5,7 @@ import com.elecciones.common.enums.RoleName;
 import com.elecciones.common.exception.BusinessException;
 import com.elecciones.security.JwtProperties;
 import com.elecciones.security.JwtService;
+import com.elecciones.security.token.TokenBlacklistService;
 import com.elecciones.user.entity.User;
 import com.elecciones.user.entity.UserRole;
 import com.elecciones.user.repository.UserRepository;
@@ -29,6 +30,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Transactional
     public UserResponse register(RegisterRequest request) {
@@ -100,6 +102,10 @@ public class AuthService {
             throw new BusinessException("El token enviado no es un refresh token", HttpStatus.UNAUTHORIZED);
         }
 
+        if (tokenBlacklistService.isBlacklisted(refreshToken)) {
+            throw new BusinessException("El refresh token fue invalidado por logout", HttpStatus.UNAUTHORIZED);
+        }
+
         String email = jwtService.extractUsername(refreshToken);
 
         User user = userRepository.findByEmail(email)
@@ -124,8 +130,7 @@ public class AuthService {
     }
 
     public void logout(LogoutRequest request) {
-        // En esta fase dejamos el endpoint listo.
-        // En la siguiente fase se guardará el refresh token en blacklist Redis con TTL.
+        tokenBlacklistService.blacklistRefreshToken(request.refreshToken());
     }
 
     private UserResponse toUserResponse(User user) {
