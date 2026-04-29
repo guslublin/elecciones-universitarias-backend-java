@@ -37,3 +37,50 @@ Restricciones relevantes:
 - El cierre concurrente de elecciones se protege mediante campo `version` para locking optimista.
 - Los logs de auditoría tienen triggers para impedir actualización o eliminación.
 
+## Autenticación JWT
+
+El sistema implementa autenticación **stateless** utilizando **JSON Web Tokens (JWT)** con Spring Security, permitiendo proteger endpoints sin mantener sesiones en servidor.
+
+### Endpoints disponibles
+
+- `POST /api/v1/auth/register`  
+  Registra nuevos usuarios con email único y contraseña protegida mediante **BCrypt**.
+
+- `POST /api/v1/auth/login`  
+  Autentica credenciales válidas y retorna:
+
+  - Access Token
+  - Refresh Token
+
+- `POST /api/v1/auth/refresh`  
+  Permite renovar el access token utilizando un refresh token válido.
+
+- `POST /api/v1/auth/logout`  
+  Endpoint preparado para invalidar refresh tokens mediante blacklist en Redis.
+
+---
+
+### Características implementadas
+
+- Autenticación totalmente **stateless**
+- Access Token con duración de **15 minutos**
+- Refresh Token con duración de **7 días**
+- Contraseñas hasheadas con **BCrypt**
+- Roles soportados:
+
+  - `ADMIN`
+  - `VOTER`
+  - `AUDITOR`
+
+- Protección de rutas mediante filtro JWT explícito de Spring Security
+- Validación automática de expiración de tokens
+- Configuración CORS centralizada
+- Respuestas diferenciadas:
+
+  - `401 Unauthorized` → usuario no autenticado
+  - `403 Forbidden` → usuario sin permisos
+
+- Manejo consistente de errores usando `ProblemDetail`
+
+---
+
