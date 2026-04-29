@@ -4,11 +4,12 @@ spring:
     username: ${POSTGRES_USER:elecciones_user}
     password: ${POSTGRES_PASSWORD:SuperSecurePostgresPass2026}
     driver-class-name: org.postgresql.Driver
+
   jpa:
-    open-in-view: false
     hibernate:
       ddl-auto: validate
     show-sql: true
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true

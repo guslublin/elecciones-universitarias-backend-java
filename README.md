@@ -15,15 +15,25 @@ Prueba técnica desarrollada en Java 21 con Spring Boot 3.x para la gestión de 
 - OpenAPI / Swagger
 - JUnit 5
 
-## Estado actual
+## Modelo de datos inicial
 
-Proyecto base inicializado correctamente con estructura Spring Boot y dependencias principales configuradas.
+El sistema utiliza PostgreSQL como base de datos relacional principal y Flyway para gestionar migraciones versionadas.
 
-## Próximas etapas
+Tablas principales:
 
-- Configuración Docker Compose
-- Seguridad JWT
-- Gestión de elecciones
-- Sistema de votación concurrente
-- Auditoría HMAC
-- Testing integral
+- `users`: almacena usuarios registrados con email único y contraseña hasheada.
+- `user_roles`: almacena los roles asociados a cada usuario (`ADMIN`, `VOTER`, `AUDITOR`).
+- `elections`: representa elecciones universitarias con estado `DRAFT`, `ACTIVE` o `CLOSED`.
+- `positions`: representa los cargos definidos dentro de una elección.
+- `election_lists`: representa las listas electorales que compiten en una elección.
+- `candidates`: representa los candidatos de cada lista, asociados a un cargo específico.
+- `votes`: registra votos anónimos mediante `voter_hash`, con restricción única por elección.
+- `audit_logs`: registra eventos críticos del sistema de forma append-only.
+
+Restricciones relevantes:
+
+- Una lista no puede tener más de un candidato para el mismo cargo.
+- Un votante anonimizado no puede votar más de una vez por elección.
+- El cierre concurrente de elecciones se protege mediante campo `version` para locking optimista.
+- Los logs de auditoría tienen triggers para impedir actualización o eliminación.
+
