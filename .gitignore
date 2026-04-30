@@ -24,7 +24,6 @@ spring.log
 
 # Environment / secrets
 .env
-.env.*
 application-local.yml
 application-secrets.yml
 

@@ -2,6 +2,23 @@
 
 Prueba técnica desarrollada en Java 21 con Spring Boot 3.x para la gestión de elecciones universitarias.
 
+## Levantar proyecto completo
+
+- Requisito: Docker instalado.
+
+- Configurar .env (Copiar formato del .env.example y rellenar los datos con los datos que se deseen establecer para el proyecto)
+
+```bash
+docker compose up --build
+```
+
+Para siguientes ejecuciones.
+
+```bash
+docker compose up
+```
+
+
 ## Tecnologías principales
 
 - Java 21
