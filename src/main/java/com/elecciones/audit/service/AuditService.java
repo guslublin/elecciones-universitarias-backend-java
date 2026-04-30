@@ -6,7 +6,8 @@ import com.elecciones.audit.repository.AuditLogRepository;
 import com.elecciones.common.enums.AuditAction;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,8 +43,14 @@ public class AuditService {
     }
 
     @Transactional(readOnly = true)
-    public Page<AuditLogResponse> findAll(Pageable pageable) {
-        return auditLogRepository.findAll(pageable)
+    public Page<AuditLogResponse> findAll(int page, int size) {
+        PageRequest pageRequest = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        return auditLogRepository.findAll(pageRequest)
                 .map(this::toResponse);
     }
 
