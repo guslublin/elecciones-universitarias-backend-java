@@ -17,64 +17,62 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private ProblemDetail build(HttpStatus status, String title, String detail, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setTitle(title);
+        problem.setType(URI.create(request.getRequestURI()));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    // ✅ negocio (409, 404, etc)
     @ExceptionHandler(BusinessException.class)
-    public ProblemDetail handleBusinessException(BusinessException ex, HttpServletRequest request) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(ex.getStatus(), ex.getMessage());
-        problem.setTitle("Error de negocio");
-        problem.setType(URI.create(request.getRequestURI()));
-        problem.setProperty("timestamp", Instant.now());
-        return problem;
+    public ProblemDetail handleBusiness(BusinessException ex, HttpServletRequest request) {
+        return build(ex.getStatus(), "Error de negocio", ex.getMessage(), request);
     }
 
-    @ExceptionHandler(UnauthorizedException.class)
-    public ProblemDetail handleUnauthorized(UnauthorizedException ex, HttpServletRequest request) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
-        problem.setTitle("No autenticado");
-        problem.setType(URI.create(request.getRequestURI()));
-        problem.setProperty("timestamp", Instant.now());
-        return problem;
-    }
-
+    // ✅ 401 credenciales
     @ExceptionHandler(BadCredentialsException.class)
-    public ProblemDetail handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
-        problem.setTitle("No autenticado");
-        problem.setType(URI.create(request.getRequestURI()));
-        problem.setProperty("timestamp", Instant.now());
-        return problem;
+    public ProblemDetail handleBadCredentials(HttpServletRequest request) {
+        return build(HttpStatus.UNAUTHORIZED, "No autenticado", "Credenciales inválidas", request);
     }
 
+    // ✅ 403
     @ExceptionHandler(AccessDeniedException.class)
-    public ProblemDetail handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "No tenés permisos para acceder a este recurso");
-        problem.setTitle("Acceso denegado");
-        problem.setType(URI.create(request.getRequestURI()));
-        problem.setProperty("timestamp", Instant.now());
-        return problem;
+    public ProblemDetail handleForbidden(HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, "Acceso denegado", "No tiene permisos para este recurso", request);
     }
 
+    // ✅ validaciones
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
+
         Map<String, String> errors = new HashMap<>();
 
-        ex.getBindingResult().getFieldErrors().forEach(error ->
-                errors.put(error.getField(), error.getDefaultMessage())
-        );
+        ex.getBindingResult().getFieldErrors()
+                .forEach(e -> errors.put(e.getField(), e.getDefaultMessage()));
 
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Error de validación");
-        problem.setTitle("Solicitud inválida");
-        problem.setType(URI.create(request.getRequestURI()));
-        problem.setProperty("timestamp", Instant.now());
+        ProblemDetail problem = build(HttpStatus.BAD_REQUEST, "Solicitud inválida", "Error de validación", request);
         problem.setProperty("errors", errors);
+
         return problem;
     }
 
+    // ✅ 404 genérico
+    @ExceptionHandler(jakarta.persistence.EntityNotFoundException.class)
+    public ProblemDetail handleNotFound(HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, "No encontrado", "Entidad no encontrada", request);
+    }
+
+    // ✅ rate limit
+    @ExceptionHandler(RateLimitException.class)
+    public ProblemDetail handleRateLimit(RateLimitException ex, HttpServletRequest request) {
+        return build(HttpStatus.TOO_MANY_REQUESTS, "Rate limit", ex.getMessage(), request);
+    }
+
+    // ✅ fallback
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneral(Exception ex, HttpServletRequest request) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
-        problem.setTitle("Error interno");
-        problem.setType(URI.create(request.getRequestURI()));
-        problem.setProperty("timestamp", Instant.now());
-        return problem;
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno", "Error interno del servidor", request);
     }
 }
