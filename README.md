@@ -388,3 +388,25 @@ queueCapacity: 100
 
 ---
 
+## Pruebas de integración
+
+El proyecto incluye pruebas críticas de integración con PostgreSQL y Redis reales mediante Testcontainers.
+
+Casos cubiertos:
+
+- Rate limiting de login: el intento 6 devuelve `429 Too Many Requests`.
+- Refresh token en blacklist: luego del logout, el refresh devuelve `401 Unauthorized`.
+- Filtro JWT: token válido, token ausente y token inválido.
+- Voto duplicado: el segundo voto del mismo usuario en la misma elección devuelve `409 Conflict`.
+- Voto en elección cerrada: devuelve `409 Conflict`.
+- Flujo completo: crear elección, agregar cargos, registrar lista, activar, votar y consultar resultados.
+- Verificación HMAC: si se altera un carácter del payload exportado, `/api/v1/audit/verify` devuelve `valid: false`.
+- Concurrencia: 500 requests simultáneos de voto del mismo usuario resultan en exactamente 1 voto válido.
+
+Ejecutar tests:
+
+```bash
+./mvnw clean test
+```
+
+---
