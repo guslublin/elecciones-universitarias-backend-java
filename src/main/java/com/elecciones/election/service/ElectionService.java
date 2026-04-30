@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.elecciones.election.service.PostCloseAsyncService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +35,8 @@ public class ElectionService {
     private final ElectionListRepository electionListRepository;
     private final ElectionValidator electionValidator;
     private final AuditService auditService;
+
+        private final PostCloseAsyncService postCloseAsyncService;
 
     @Transactional
     public ElectionResponse create(CreateElectionRequest request) {
@@ -203,6 +206,35 @@ public class ElectionService {
 
         return toResponse(saved);
     }
+
+        @Transactional
+        public void closeAutomatically(Election election) {
+
+        if (election.getStatus() == ElectionStatus.CLOSED) {
+                return;
+        }
+
+        election.setStatus(ElectionStatus.CLOSED);
+        election.setClosedAt(LocalDateTime.now());
+
+        Election saved = electionRepository.save(election);
+
+        auditService.log(
+                null,
+                "SYSTEM",
+                AuditAction.ELECTION_CLOSED,
+                "ELECTION",
+                saved.getId(),
+                Map.of(
+                        "title", saved.getTitle(),
+                        "status", "CLOSED",
+                        "mode", "AUTO",
+                        "closedAt", saved.getClosedAt().toString()
+                )
+        );
+
+        postCloseAsyncService.process(saved);
+        }
 
     private String getCurrentActor() {
         return SecurityContextHolder.getContext().getAuthentication().getName();

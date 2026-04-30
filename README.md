@@ -370,3 +370,21 @@ Ejemplo de respuesta válida:
 ---
 
 
+## Scheduler automático
+
+Cada 60 segundos el sistema revisa elecciones ACTIVE vencidas.
+
+Si end_date ya pasó:
+
+- se cierran automáticamente
+- se registra auditoría
+- se ejecuta proceso async post cierre
+
+## Async Thread Pool
+
+corePoolSize: 4
+maxPoolSize: 8
+queueCapacity: 100
+
+---
+
