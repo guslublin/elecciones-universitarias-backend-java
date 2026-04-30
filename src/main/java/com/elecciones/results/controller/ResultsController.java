@@ -18,13 +18,13 @@ public class ResultsController {
     private final ResultsService resultsService;
 
     @GetMapping("/results")
-    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR', 'VOTER')")
     public ElectionResultsResponse getResults(@PathVariable UUID electionId) {
         return resultsService.getResults(electionId);
     }
 
     @GetMapping("/stats")
-    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR', 'VOTER')")
     public ElectionStatsResponse getStats(@PathVariable UUID electionId) {
         return resultsService.getStats(electionId);
     }

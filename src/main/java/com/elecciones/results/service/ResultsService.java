@@ -13,6 +13,8 @@ import com.elecciones.user.repository.UserRepository;
 import com.elecciones.vote.repository.VoteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,8 +34,9 @@ public class ResultsService {
     @Transactional(readOnly = true)
     public ElectionResultsResponse getResults(UUID electionId) {
         Election election = getElection(electionId);
-        List<ElectionList> lists = electionListRepository.findByElectionId(electionId);
+        validateResultsAccess(election);
 
+        List<ElectionList> lists = electionListRepository.findByElectionId(electionId);
         long totalVotes = voteRepository.countByElectionId(electionId);
 
         List<ListResultResponse> results = lists.stream()
@@ -75,6 +78,7 @@ public class ResultsService {
     @Transactional(readOnly = true)
     public ElectionStatsResponse getStats(UUID electionId) {
         Election election = getElection(electionId);
+        validateResultsAccess(election);
 
         long totalEligibleVoters = userRepository.countByRole(RoleName.VOTER);
         long votesCast = voteRepository.countByElectionId(electionId);
@@ -112,6 +116,28 @@ public class ResultsService {
                         "Elección no encontrada",
                         HttpStatus.NOT_FOUND
                 ));
+    }
+
+    private void validateResultsAccess(Election election) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        boolean isAdminOrAuditor = authentication.getAuthorities()
+                .stream()
+                .anyMatch(authority ->
+                        authority.getAuthority().equals("ROLE_ADMIN") ||
+                        authority.getAuthority().equals("ROLE_AUDITOR")
+                );
+
+        if (isAdminOrAuditor) {
+            return;
+        }
+
+        if (election.getStatus() == ElectionStatus.ACTIVE) {
+            throw new BusinessException(
+                    "Los votantes no pueden ver resultados mientras la elección está activa",
+                    HttpStatus.FORBIDDEN
+            );
+        }
     }
 
     private List<CandidateWinnerResponse> mapWinnerCandidates(ElectionList winnerList) {
