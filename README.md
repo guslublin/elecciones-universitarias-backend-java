@@ -103,6 +103,7 @@ Intento 3 → permitido
 Intento 4 → permitido
 Intento 5 → permitido
 Intento 6 → bloqueado con 429
+```
 
 ---
 
@@ -249,7 +250,7 @@ Ejemplo:
     }
   ]
 }
-
+```
 
 --- 
 
@@ -286,6 +287,7 @@ Ejemplo:
 {
   "listId": "uuid-de-la-lista"
 }
+```
 
 ---
 
@@ -312,6 +314,31 @@ Reglas implementadas:
 Nota técnica:
 
 Para evitar el problema N+1, las listas se cargan con sus candidatos y cargos mediante `@EntityGraph`.
+
+---
+
+## Auditoría persistente
+
+El sistema registra acciones críticas en la tabla `audit_logs`.
+
+Eventos auditados actualmente:
+
+- `LOGIN_SUCCESS`
+- `LOGIN_FAILED`
+- `ELECTION_CREATED`
+- `ELECTION_CLOSED`
+- `VOTE_CAST`
+
+Endpoint implementado:
+
+- `GET /api/v1/audit/logs`: consulta paginada del log general de auditoría. Requiere rol `ADMIN`.
+
+Características:
+
+- Los logs se guardan en base de datos PostgreSQL.
+- Cada evento contiene actor, acción, entidad afectada, detalle JSON y timestamp.
+- Los votos se registran con actor anonimizado, por ejemplo `anonymous:a3f2b1...`.
+- La tabla `audit_logs` fue diseñada como append-only mediante triggers de base de datos.
 
 ---
 

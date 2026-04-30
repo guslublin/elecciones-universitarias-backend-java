@@ -1,6 +1,8 @@
 package com.elecciones.auth.service;
 
+import com.elecciones.audit.service.AuditService;
 import com.elecciones.auth.dto.*;
+import com.elecciones.common.enums.AuditAction;
 import com.elecciones.common.enums.RoleName;
 import com.elecciones.common.exception.BusinessException;
 import com.elecciones.security.JwtProperties;
@@ -12,12 +14,14 @@ import com.elecciones.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,6 +35,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
     private final TokenBlacklistService tokenBlacklistService;
+    private final AuditService auditService;
 
     @Transactional
     public UserResponse register(RegisterRequest request) {
@@ -68,9 +73,22 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         String email = request.email().toLowerCase();
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, request.password())
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, request.password())
+            );
+        } catch (BadCredentialsException ex) {
+            auditService.log(
+                    null,
+                    email,
+                    AuditAction.LOGIN_FAILED,
+                    "USER",
+                    null,
+                    Map.of("reason", "Credenciales inválidas")
+            );
+
+            throw ex;
+        }
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException("Usuario no encontrado", HttpStatus.NOT_FOUND));
@@ -82,6 +100,15 @@ public class AuthService {
 
         String accessToken = jwtService.generateAccessToken(user.getId(), user.getEmail(), roles);
         String refreshToken = jwtService.generateRefreshToken(user.getId(), user.getEmail());
+
+        auditService.log(
+                user.getId(),
+                user.getEmail(),
+                AuditAction.LOGIN_SUCCESS,
+                "USER",
+                user.getId(),
+                Map.of("roles", roles)
+        );
 
         return new AuthResponse(
                 user.getId(),

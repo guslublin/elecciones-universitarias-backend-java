@@ -1,5 +1,7 @@
 package com.elecciones.election.service;
 
+import com.elecciones.audit.service.AuditService;
+import com.elecciones.common.enums.AuditAction;
 import com.elecciones.common.enums.ElectionStatus;
 import com.elecciones.common.exception.BusinessException;
 import com.elecciones.election.dto.CreateElectionRequest;
@@ -14,11 +16,13 @@ import com.elecciones.election.repository.PositionRepository;
 import com.elecciones.election.validator.ElectionValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -29,6 +33,7 @@ public class ElectionService {
     private final PositionRepository positionRepository;
     private final ElectionListRepository electionListRepository;
     private final ElectionValidator electionValidator;
+    private final AuditService auditService;
 
     @Transactional
     public ElectionResponse create(CreateElectionRequest request) {
@@ -43,6 +48,20 @@ public class ElectionService {
                 .build();
 
         Election saved = electionRepository.save(election);
+
+        auditService.log(
+                null,
+                getCurrentActor(),
+                AuditAction.ELECTION_CREATED,
+                "ELECTION",
+                saved.getId(),
+                Map.of(
+                        "title", saved.getTitle(),
+                        "status", saved.getStatus().name(),
+                        "startDate", saved.getStartDate().toString(),
+                        "endDate", saved.getEndDate().toString()
+                )
+        );
 
         return toResponse(saved);
     }
@@ -169,7 +188,24 @@ public class ElectionService {
 
         Election saved = electionRepository.save(election);
 
+        auditService.log(
+                null,
+                getCurrentActor(),
+                AuditAction.ELECTION_CLOSED,
+                "ELECTION",
+                saved.getId(),
+                Map.of(
+                        "title", saved.getTitle(),
+                        "status", saved.getStatus().name(),
+                        "closedAt", saved.getClosedAt().toString()
+                )
+        );
+
         return toResponse(saved);
+    }
+
+    private String getCurrentActor() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
     private ElectionResponse toResponse(Election election) {

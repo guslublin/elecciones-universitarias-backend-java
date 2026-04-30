@@ -1,7 +1,6 @@
 package com.elecciones.vote.service;
 
-import com.elecciones.audit.entity.AuditLog;
-import com.elecciones.audit.repository.AuditLogRepository;
+import com.elecciones.audit.service.AuditService;
 import com.elecciones.common.enums.AuditAction;
 import com.elecciones.common.enums.ElectionStatus;
 import com.elecciones.common.exception.BusinessException;
@@ -35,8 +34,8 @@ public class VoteService {
     private final ElectionListRepository electionListRepository;
     private final VoteRepository voteRepository;
     private final UserRepository userRepository;
-    private final AuditLogRepository auditLogRepository;
     private final HashService hashService;
+    private final AuditService auditService;
 
     @Transactional
     public VoteResponse vote(UUID electionId, VoteRequest request) {
@@ -130,20 +129,18 @@ public class VoteService {
     private void saveVoteAudit(Vote vote, Election election, ElectionList electionList, String voterHash) {
         String anonymousActor = "anonymous:" + voterHash.substring(0, 12);
 
-        AuditLog auditLog = AuditLog.builder()
-                .actorId(null)
-                .actor(anonymousActor)
-                .action(AuditAction.VOTE_CAST)
-                .entityType("VOTE")
-                .entityId(vote.getId())
-                .detail(Map.of(
+        auditService.log(
+                null,
+                anonymousActor,
+                AuditAction.VOTE_CAST,
+                "VOTE",
+                vote.getId(),
+                Map.of(
                         "electionId", election.getId().toString(),
                         "electionTitle", election.getTitle(),
                         "listId", electionList.getId().toString(),
                         "listName", electionList.getName()
-                ))
-                .build();
-
-        auditLogRepository.save(auditLog);
+                )
+        );
     }
 }
