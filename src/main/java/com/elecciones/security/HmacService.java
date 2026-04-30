@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.Map;
 
@@ -46,5 +47,18 @@ public class HmacService {
         } catch (Exception ex) {
             throw new IllegalStateException("No se pudo firmar el payload de auditoría", ex);
         }
+    }
+
+    public boolean verifyPayload(Map<String, Object> payload, String receivedSignature) {
+        if (receivedSignature == null || !receivedSignature.startsWith(SIGNATURE_PREFIX)) {
+            return false;
+        }
+
+        String expectedSignature = signPayload(payload);
+
+        return MessageDigest.isEqual(
+                expectedSignature.getBytes(StandardCharsets.UTF_8),
+                receivedSignature.getBytes(StandardCharsets.UTF_8)
+        );
     }
 }

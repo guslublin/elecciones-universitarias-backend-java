@@ -342,3 +342,31 @@ Características:
 
 ---
 
+## Verificación de firma HMAC
+
+El sistema permite verificar la integridad de un reporte de auditoría exportado.
+
+Endpoint implementado:
+
+- `POST /api/v1/audit/verify`: verifica si el payload recibido coincide con la firma HMAC enviada. Requiere rol `ADMIN` o `AUDITOR`.
+
+Funcionamiento:
+
+- El endpoint recibe el mismo JSON generado por `GET /api/v1/elections/{id}/audit`.
+- No consulta la base de datos.
+- Recalcula la firma HMAC-SHA256 sobre el campo `payload`.
+- El payload se serializa de forma canónica con claves ordenadas.
+- Si el JSON fue alterado, aunque sea en un solo carácter, la verificación devuelve `valid: false`.
+
+Ejemplo de respuesta válida:
+
+```json
+{
+  "valid": true,
+  "message": "La firma HMAC es válida. El payload no fue alterado."
+}
+```
+
+---
+
+
